@@ -6,6 +6,10 @@ body {
     display: inline-block !important;
 }
 
+.text-sm {
+    font-size: 12px !important;
+}
+
 footer {
     font-size: smaller !important;
     text-transform: uppercase !important;
@@ -13,4 +17,8 @@ footer {
 }
 .bg-modal {
     background: #00b894 !important;
+}
+
+.delete-icon {
+    cursor: pointer !important;
 }

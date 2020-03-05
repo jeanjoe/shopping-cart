@@ -1,8 +1,9 @@
 $(document).ready(() => {
     $("#my_cart_buttons").hide();
-    $("#show_no_items").hide();
+    $("#alert").hide();
     httpRequest("products.php", displayProducts);
     getCartContent();
+    localStorage.removeItem('delivery_type');
 });
 
 /**
@@ -51,7 +52,7 @@ function displayProducts(products) {
             product.name +
             '">' +
             '<div class="card-body">' +
-            '<h5 class="card-title text-sm">' +
+            '<h5 class="card-title text-sm text-primary">' +
             product.name +
             " $" +
             product.price +
@@ -92,8 +93,10 @@ function addToCart(id) {
     const cartItems = getCartItems();
     const quantity = $(`#quantity_${id}`).val();
     const maxQuantity = $(`#quantity_${id}`).attr("max");
-    if (parseInt(quantity) > parseInt(maxQuantity)) {
-        alert(`Quantity available is ${maxQuantity}, Your quantity ${quantity}`);
+    if (parseInt(quantity) > parseInt(maxQuantity) || parseInt(quantity) < 1) {
+        alert(
+            `Select a valid Qty, Min Qty=1 and Max-${maxQuantity}, Your quantity ${quantity}`
+        );
     } else {
         cartItems.push({ id, quantity });
         localStorage.setItem(
@@ -106,6 +109,8 @@ function addToCart(id) {
         );
         setAddToCartButtonContent(id);
         getCartContent();
+        $("input[name=delivery_type]").prop('checked', false);
+        localStorage.removeItem('delivery_type');
     }
 }
 
@@ -121,7 +126,6 @@ function clearCart() {
  * @param {*} id
  */
 function removeCartItem(id) {
-    $("#total_amount").val(0)
     let cartItems = getCartItems();
     cartItems = cartItems.filter(item => {
         return item.id != id;
@@ -129,6 +133,8 @@ function removeCartItem(id) {
     localStorage.setItem("cart_items", JSON.stringify(cartItems));
     setAddToCartButtonContent(id);
     getCartContent();
+    $("input[name=delivery_type]").prop('checked', false);
+    localStorage.removeItem('delivery_type');
 }
 
 /**
@@ -207,19 +213,23 @@ function getCartItem(id) {
 }
 
 /**
- * Get Cart contents 
+ * Get Cart contents
  */
 function getMyCartProducts() {
     const cartItems = getCartItems();
-    $("total_amount").val(0);
+    $("#total_amount").val(0);
     $("#my_cart_items").html("");
-    $("#show_no_items").hide();
-    $("#my_cart_modal_content").show()
+    $("#alert").hide();
+    $("#my_cart_modal_content").show();
     $("#my_cart_table tbody").empty();
     if (cartItems.length === 0) {
-        $("#show_no_items").show();
+        setAlertContent(
+            "You have no Items in the cart",
+            "alert-danger",
+            "alert-success alert-warning"
+        );
         $("#my_cart_modal_content").hide();
-    };
+    }
 
     cartItems.forEach(item => {
         httpRequest(`products.php?product_id=${item.id}`, setMyCartContent);
@@ -229,14 +239,15 @@ function getMyCartProducts() {
 /**
  * This is a callback function to handle data from http Request
  * Get the http response and display on dropdown and modal
- * @param {*} data 
+ * @param {*} data
  */
 function setMyCartContent(data) {
     const myCartColumn = document.createElement("li");
     const cartItem = getCartItem(data.product.id);
-    const totalCost = parseFloat(cartItem.quantity * parseFloat(data.product.price));
-    let totalAmount = setTotalAmount(totalCost);
-    console.log(totalAmount);
+    const totalCost = parseFloat(
+        cartItem.quantity * parseFloat(data.product.price)
+    );
+    setTotalAmount(totalCost);
     myCartColumn.classList.add(
         "list-group-item",
         "d-flex",
@@ -254,30 +265,87 @@ function setMyCartContent(data) {
         data.product.id +
         ')"><i class="fa fa-trash"></i></button>';
     document.getElementById("my_cart_items").appendChild(myCartColumn);
-    const tableRow =
+    const tableRow = setTableRow(data.product, cartItem.quantity, totalCost);
+    $("#my_cart_table tbody").append(tableRow);
+}
+
+function setTableRow(data, quantity, totalCost) {
+    return (
         "<tr>" +
         "<td>" +
-        data.product.name +
+        data.name +
         "</td>" +
         "<td>" +
-        cartItem.quantity +
+        quantity +
+        "</td>" +
+        "<td> $" +
+        data.price +
         "</td>" +
         "<td> $" +
         totalCost +
         "</td>" +
-        "<td>" +
-        '<button class="btn btn-link text-danger text-right" onclick="removeCartItem(' +
-        data.product.id +
-        ')"><i class="fa fa-trash"></i></button>' +
+        "<td class='text-center'>" +
+        '<i class="fa fa-trash text-danger delete-icon" onclick="removeCartItem(' +
+        data.id +
+        ')"></i>' +
         "</td>" +
-        "</tr>";
-    $("#my_cart_table tbody").append(tableRow);
+        "</tr>"
+    );
 }
-
 
 function setTotalAmount(amount) {
     let totalAmount = $("#total_amount").val();
     totalAmount = parseFloat(totalAmount) + amount;
-    $("#total_amount").val(totalAmount)
+    $("#total_amount").val(totalAmount.toFixed(2));
     return totalAmount;
+}
+
+function checkout() {
+    const deliveryType = $("input[name=delivery_type]:checked").val();
+    if (deliveryType == undefined) {
+        setAlertContent("Please pick a delivery type", "alert-danger");
+    } else {
+        const deliveryFee = deliveryType == "pickUp" ? 0 : 5;
+
+        if (parseFloat(deliveryFee) + parseFloat($("#total_amount").val()) > 100) {
+            setAlertContent(
+                "Please buy within your Credit of $100",
+                "alert-danger",
+                "alert-success alert-warning"
+            );
+        } else {
+            setAlertContent(
+                "<i class='fa fa-thumbs-up'></i> Thank you for your purchase, Your order is being processed",
+                "alert-success",
+                "alert-danger alert-warning"
+            );
+            $("#my_cart_modal_content").hide();
+            $("#checkoutButton").hide();
+            setTimeout(() => {
+                clearCart();
+            }, 5000)
+        }
+    }
+}
+
+function setAlertContent(message, classesToAdd, classesToRemove = null) {
+    $("#alert").show();
+    $("#alert").html(message);
+    $("#alert").addClass(classesToAdd);
+    $("#alert").removeClass(classesToRemove);
+}
+
+function addDeliveryFee() {
+    $("#alert").hide();
+    const deliveryType = $("input[name=delivery_type]:checked").val();
+    const checkStorage = localStorage.getItem('delivery_type');
+    
+    let deliveryFee = deliveryType == "UPS" ? 5 : 0;
+    
+    if (deliveryType == 'pickUp' && checkStorage == 'UPS')  deliveryFee = -5;
+
+    localStorage.setItem('delivery_type', deliveryType)
+    $("#total_amount").val(
+        parseFloat(deliveryFee) + parseFloat($("#total_amount").val())
+    );
 }

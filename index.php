@@ -17,7 +17,7 @@
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand text-white" href="/">SHOPPER 20</a>
+            <a class="navbar-brand text-white" href="/"><i class="fa fa-shopping-basket"></i> SHOPPER 20</a>
 
             <div class="collapse navbar-collapse" id="navbarTogglerDemo03">
                 <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
@@ -43,7 +43,7 @@
     </nav>  
 
     <div class="container my-4">
-        <h3>Product List <span id="spinner"></span></h3>
+        <h3>Products <span id="spinner"></span></h3>
         <hr>
         <!-- Dispaly Products here -->
         <div class="row" id="products"> </div>
@@ -64,13 +64,14 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-warning" id="show_no_items">You have no Items in the cart</div>
+                    <div class="alert rounded-0" id="alert"></div>
                     <div id="my_cart_modal_content">
                         <table class="table table-striped table-sm table-bordered" id="my_cart_table">
                             <thead class="thead-light">
                                 <th>Name</th>
                                 <th>Qty</th>
-                                <th>Amount</th>
+                                <th>Unit Cost</th>
+                                <th>Total</th>
                                 <th>Remove</th>
                             </thead>
                             <tbody>
@@ -78,15 +79,21 @@
                             </tbody>
                         </table>
                         <div class="form-group">
-                            <input type="text" min="0" class="float-right" id="total_amount" value="0" />
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text rounded-0">Grand Total ($)</span>
+                                </div>
+                                <input type="text" min="0" class="form-control rounded-0 text-right" id="total_amount" value="0" readonly />
+                            </div>
+                            
                             <div class="clearfix"></div>
-                            <label class="d-block">Select Pick up</label>
+                            <label class="d-block font-weight-bold text-sm text-primary">Select Delivery type</label>
                             <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="pick_up" name="customRadioInline1" class="custom-control-input">
+                                <input type="radio" id="pick_up" value="pickUp" name="delivery_type" class="custom-control-input" onclick="addDeliveryFee()">
                                 <label class="custom-control-label" for="pick_up">Pick Up $0</label>
                             </div>
                             <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="ups" name="customRadioInline1" class="custom-control-input">
+                                <input type="radio" id="ups" value="UPS" name="delivery_type" class="custom-control-input" onclick="addDeliveryFee()">
                                 <label class="custom-control-label" for="ups">UPS $5</label>
                             </div>
                         </div>
@@ -94,7 +101,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-sm btn-danger rounded-0" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-sm btn-success rounded-0">Pay Now</button>
+                    <button type="button" class="btn btn-sm btn-success rounded-0" id="checkoutButton" onclick="checkout()">Checkout</button>
                 </div>
             </div>
         </div>
