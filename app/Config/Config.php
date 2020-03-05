@@ -5,7 +5,7 @@ namespace App\Config;
 use Symfony\Component\Dotenv\Dotenv;
 
 
-class Config {
+class Env {
 
     public function __construct()
     {

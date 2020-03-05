@@ -2,9 +2,9 @@
 
 namespace App\Config;
 
-use App\Config\Config;
+use App\Config\Env;
 
-class Database extends config
+class Database extends Env
 {
     private $host;
     private $user;
