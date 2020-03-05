@@ -7,10 +7,11 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="public/style/style.css">
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <title>SHOPPER 20</title>
   </head>
-  <body style="background:#dfe6e9;">
+  <body>
     <nav class="navbar navbar-expand-lg navbar-light text-white" style="background: #00b894; color: #fff;">
         <div class="container">
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,18 +24,15 @@
                 </ul>
                 <div class="my-2 my-lg-0">
                     <div class="dropdown d-inline mr-2">
-                        <button class="btn btn-primary" type="button" id="cartDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <button class="btn btn-primary rounded-0" type="button" id="cartDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         </button>
 
                         <div class="dropdown-menu dropdown-menu-right mt-3" aria-labelledby="cartDropdownMenuLink">
                             <div class="text-center text-primary font-weight-bold">Items in cart</div>
-                            <div class="dropdown-divider"></div>
-                            <ul class="list-group" id="my_cart_items">
-                            </ul>
-                            <div class="dropdown-divider"></div>
-                            <div class="px-2">
-                                <button class="btn btn-sm btn-outline-danger mr-2 float-left" onClick="clearCart()">Clear</button>
-                                <button class="btn btn-sm btn-outline-success float-right" type="button"  data-toggle="modal" data-target="#cartModal">Checkout</button>
+                            <ul class="list-group" id="my_cart_items"></ul>
+                            <div class="p-2" id="my_cart_buttons">
+                                <button class="btn btn-sm btn-outline-danger rounded-0 mr-2 float-left" onClick="clearCart()">Clear</button>
+                                <button class="btn btn-sm btn-outline-success rounded-0 float-right" type="button"  data-toggle="modal" data-target="#cartModal">Checkout</button>
                             </div>
                         </div>
                     </div>
@@ -45,37 +43,59 @@
     </nav>  
 
     <div class="container my-4">
-        <h3>Product List</h3>
-
+        <h3>Product List <span id="spinner"></span></h3>
         <hr>
-
-        <div id="loader"></div>
         <!-- Dispaly Products here -->
         <div class="row" id="products"> </div>
-
-        <div class="text-sm text-center text-muted my-4">
+        <footer class="text-center my-4">
             &copy; <?= Date('Y') ?> manzede - SHOPPER 20. All Rights Reserved
-        </div>
+        </footer>
     </div>
 
 
     <!-- Modal -->
-    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
+    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cartModalLabel">My Cart - Checkout</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                ...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Pay Now</button>
-            </div>
+            <div class="modal-content rounded-0">
+                <div class="modal-header bg-modal rounded-0 text-white">
+                    <h5 class="modal-title" id="cartModalLabel">My Cart - Checkout</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" id="show_no_items">You have no Items in the cart</div>
+                    <div id="my_cart_modal_content">
+                        <table class="table table-striped table-sm table-bordered" id="my_cart_table">
+                            <thead class="thead-light">
+                                <th>Name</th>
+                                <th>Qty</th>
+                                <th>Amount</th>
+                                <th>Remove</th>
+                            </thead>
+                            <tbody>
+                                
+                            </tbody>
+                        </table>
+                        <div class="form-group">
+                            <input type="text" min="0" class="float-right" id="total_amount" value="0" />
+                            <div class="clearfix"></div>
+                            <label class="d-block">Select Pick up</label>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" id="pick_up" name="customRadioInline1" class="custom-control-input">
+                                <label class="custom-control-label" for="pick_up">Pick Up $0</label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" id="ups" name="customRadioInline1" class="custom-control-input">
+                                <label class="custom-control-label" for="ups">UPS $5</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-danger rounded-0" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-sm btn-success rounded-0">Pay Now</button>
+                </div>
             </div>
         </div>
     </div>

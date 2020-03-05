@@ -1,0 +1,16 @@
+body {
+    background-color: #dfe6e9;
+}
+.w-12 {
+    width: 60px;
+    display: inline-block !important;
+}
+
+footer {
+    font-size: smaller !important;
+    text-transform: uppercase !important;
+    color: #00b894 !important;
+}
+.bg-modal {
+    background: #00b894 !important;
+}
