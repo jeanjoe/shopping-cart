@@ -3,7 +3,8 @@ $(document).ready(() => {
     $("#alert").hide();
     httpRequest("products.php", displayProducts);
     getCartContent();
-    localStorage.removeItem('delivery_type');
+    localStorage.removeItem('transport_ype');
+    getCurrentBalance()
 });
 
 /**
@@ -78,44 +79,41 @@ function displayProducts(products) {
     });
 
     productsColumn.appendChild(productFragment);
-    setCartItemContents();
 }
 
 function getCartContent() {
     let cartButton = document.getElementById("cartDropdownMenuLink");
     const cartItems = getCartItems();
-    cartButton.innerHTML = `<i class="fa fa-shopping-cart"></i> My Cart [${cartItems.length}]`;
-    setCartItemContents();
+    cartButton.innerHTML = `<i class="fa fa-shopping-basket"></i> My Cart [${cartItems.length}]`;
     getMyCartProducts();
 }
 
 function addToCart(id) {
     const cartItems = getCartItems();
-    const quantity = $(`#quantity_${id}`).val();
-    const maxQuantity = $(`#quantity_${id}`).attr("max");
-    if (parseInt(quantity) > parseInt(maxQuantity) || parseInt(quantity) < 1) {
+    const quantity = parseInt($(`#quantity_${id}`).val());
+    const maxQuantity = parseInt($(`#quantity_${id}`).attr("max"));
+    if (quantity > maxQuantity || quantity < 1) {
         alert(
             `Select a valid Qty, Min Qty=1 and Max-${maxQuantity}, Your quantity ${quantity}`
         );
     } else {
-        cartItems.push({ id, quantity });
+        const itemExistsIndex = cartItems.findIndex((item) => item.id == id);
+
+        if (itemExistsIndex == -1 ) cartItems.push({ id, quantity })
+        
+        cartItems[itemExistsIndex] = { id, quantity };
         localStorage.setItem(
             "cart_items",
-            JSON.stringify(
-                [...new Set(cartItems.map(item => item.id))].map(id => {
-                    return cartItems.find(item => item.id === id);
-                })
-            )
+            JSON.stringify(cartItems)
         );
-        setAddToCartButtonContent(id);
+
         getCartContent();
-        $("input[name=delivery_type]").prop('checked', false);
-        localStorage.removeItem('delivery_type');
+        $("input[name=transport_ype]").prop('checked', false);
+        localStorage.removeItem('transport_ype');
     }
 }
 
 function clearCart() {
-    $("#my_cart_buttons").hide();
     resetAddToCartToButton();
     localStorage.setItem("cart_items", JSON.stringify([]));
     getCartContent();
@@ -128,13 +126,13 @@ function clearCart() {
 function removeCartItem(id) {
     let cartItems = getCartItems();
     cartItems = cartItems.filter(item => {
+        $(`#quantity_${item.id}`).val(1);
         return item.id != id;
     });
     localStorage.setItem("cart_items", JSON.stringify(cartItems));
-    setAddToCartButtonContent(id);
     getCartContent();
-    $("input[name=delivery_type]").prop('checked', false);
-    localStorage.removeItem('delivery_type');
+    $("input[name=transport_ype]").prop('checked', false);
+    localStorage.removeItem('transport_ype');
 }
 
 /**
@@ -151,44 +149,12 @@ function checkItemInCart(id) {
 }
 
 /**
- * Set Cart button content
- * @param {*} id
- */
-function setAddToCartButtonContent(id) {
-    const button = $(`#add_to_cart_button_${id}`);
-    const cartItem = getCartItem(id);
-    if (checkItemInCart(id) == true) {
-        button.html('<i class="fa fa-cart-arrow-down"></i>');
-        button.addClass("btn-warning");
-        button.removeAttr("onclick");
-        button.attr("onclick", `removeCartItem(${id})`);
-        $(`#quantity_${id}`).val(cartItem.quantity);
-    } else {
-        button.html('<i class="fa fa-cart-plus"></i> ');
-        button.removeClass("btn-warning");
-        button.addClass("btn-primary");
-        button.attr("onclick", `addToCart(${id})`);
-        $(`#quantity_${id}`).val(1);
-    }
-}
-
-/**
- * Set Cart Item content for each product
- */
-function setCartItemContents() {
-    const cartItems = getCartItems();
-    if (cartItems.length > 0) $("#my_cart_buttons").show();
-    cartItems.forEach(item => {
-        setAddToCartButtonContent(item.id);
-    });
-}
-
-/**
  * Reset Cart button content to Add Cart
  */
 function resetAddToCartToButton() {
     const cartItems = getCartItems();
     cartItems.forEach(item => {
+        $(`#quantity_${item.id}`).val(1);
         const button = $(`#add_to_cart_button_${item.id}`);
         button.html('<i class="fa fa-cart-plus"></i> ');
         button.removeClass("btn-warning");
@@ -222,16 +188,19 @@ function getMyCartProducts() {
     $("#alert").hide();
     $("#my_cart_modal_content").show();
     $("#my_cart_table tbody").empty();
+    $("#my_cart_buttons").show()
     if (cartItems.length === 0) {
         setAlertContent(
-            "You have no Items in the cart",
+            "Your Cart is Empty",
             "alert-danger",
             "alert-success alert-warning"
         );
         $("#my_cart_modal_content").hide();
+        $("#my_cart_buttons").hide()
     }
 
     cartItems.forEach(item => {
+        $(`#quantity_${item.id}`).val(item.quantity);
         httpRequest(`products.php?product_id=${item.id}`, setMyCartContent);
     });
 }
@@ -269,6 +238,12 @@ function setMyCartContent(data) {
     $("#my_cart_table tbody").append(tableRow);
 }
 
+/**
+ * Set Table row content to display checkout items
+ * @param {*} data 
+ * @param {*} quantity 
+ * @param {*} totalCost 
+ */
 function setTableRow(data, quantity, totalCost) {
     return (
         "<tr>" +
@@ -282,7 +257,7 @@ function setTableRow(data, quantity, totalCost) {
         data.price +
         "</td>" +
         "<td> $" +
-        totalCost +
+        parseFloat(totalCost).toFixed(2) +
         "</td>" +
         "<td class='text-center'>" +
         '<i class="fa fa-trash text-danger delete-icon" onclick="removeCartItem(' +
@@ -293,6 +268,10 @@ function setTableRow(data, quantity, totalCost) {
     );
 }
 
+/**
+ * Set Total amount
+ * @param {*} amount 
+ */
 function setTotalAmount(amount) {
     let totalAmount = $("#total_amount").val();
     totalAmount = parseFloat(totalAmount) + amount;
@@ -300,27 +279,32 @@ function setTotalAmount(amount) {
     return totalAmount;
 }
 
+/**
+ * Checkout to process order
+ */
 function checkout() {
-    const deliveryType = $("input[name=delivery_type]:checked").val();
-    if (deliveryType == undefined) {
-        setAlertContent("Please pick a delivery type", "alert-danger");
+    const transportType = $("input[name=transport_ype]:checked").val();
+    if (transportType == undefined) {
+        setAlertContent("Please pick a transport type", "alert-danger");
     } else {
-        const deliveryFee = deliveryType == "pickUp" ? 0 : 5;
+        const deliveryFee = transportType == "pickUp" ? 0 : 5;
 
-        if (parseFloat(deliveryFee) + parseFloat($("#total_amount").val()) > 100) {
+        const grandTotal = parseFloat(deliveryFee) + parseFloat($("#total_amount").val());
+
+        if ( grandTotal > getCurrentBalance()) {
             setAlertContent(
-                "Please buy within your Credit of $100",
+                `Please buy within your Credit of $${getCurrentBalance()}`,
                 "alert-danger",
                 "alert-success alert-warning"
             );
         } else {
+            setCurrentBalance(grandTotal);
             setAlertContent(
                 "<i class='fa fa-thumbs-up'></i> Thank you for your purchase, Your order is being processed",
                 "alert-success",
                 "alert-danger alert-warning"
             );
             $("#my_cart_modal_content").hide();
-            $("#checkoutButton").hide();
             setTimeout(() => {
                 clearCart();
             }, 5000)
@@ -328,24 +312,54 @@ function checkout() {
     }
 }
 
+/**
+ * Set Alert content
+ * @param {*} message 
+ * @param {*} classesToAdd 
+ * @param {*} classesToRemove 
+ */
 function setAlertContent(message, classesToAdd, classesToRemove = null) {
     $("#alert").show();
     $("#alert").html(message);
     $("#alert").addClass(classesToAdd);
     $("#alert").removeClass(classesToRemove);
+    return;
 }
 
+/**
+ * Add Delivery Fee
+ */
 function addDeliveryFee() {
     $("#alert").hide();
-    const deliveryType = $("input[name=delivery_type]:checked").val();
-    const checkStorage = localStorage.getItem('delivery_type');
+    const transportType = $("input[name=transport_ype]:checked").val();
+    const checkStorage = localStorage.getItem('transport_ype');
     
-    let deliveryFee = deliveryType == "UPS" ? 5 : 0;
+    let deliveryFee = transportType == "UPS" ? 5 : 0;
     
-    if (deliveryType == 'pickUp' && checkStorage == 'UPS')  deliveryFee = -5;
+    if (transportType == 'pickUp' && checkStorage == 'UPS')  deliveryFee = -5;
 
-    localStorage.setItem('delivery_type', deliveryType)
+    localStorage.setItem('transport_ype', transportType)
     $("#total_amount").val(
         parseFloat(deliveryFee) + parseFloat($("#total_amount").val())
     );
+}
+
+/**
+ * Get current Balance from storage, else set it to $100
+ */
+function getCurrentBalance() {
+    const storageBal = parseFloat(localStorage.getItem('current_balance') || '100');
+    $("#current_balance").html(`Bal. $${storageBal.toFixed(2)}`);
+    return storageBal;
+}
+
+/**
+ * Set new current value and save to storage
+ * @param {*} amount 
+ */
+function setCurrentBalance(amount) {
+    const storageBal = parseFloat(getCurrentBalance() - parseFloat(amount));
+    localStorage.setItem('current_balance', storageBal.toFixed(2));
+    getCurrentBalance();
+    return;
 }

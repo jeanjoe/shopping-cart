@@ -36,7 +36,7 @@
                             </div>
                         </div>
                     </div>
-                    
+                    <div class="btn btn-warning text-secodnary mr-1 rounded-0" id="current_balance"></div>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content rounded-0">
                 <div class="modal-header bg-modal rounded-0 text-white">
-                    <h5 class="modal-title" id="cartModalLabel">My Cart - Checkout</h5>
+                    <h5 class="modal-title" id="cartModalLabel"><i class="fa fa-shopping-basket"></i> My Cart - Checkout</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                     </button>
@@ -87,13 +87,13 @@
                             </div>
                             
                             <div class="clearfix"></div>
-                            <label class="d-block font-weight-bold text-sm text-primary">Select Delivery type</label>
+                            <label class="d-block font-weight-bold text-sm text-primary">Select Transport type</label>
                             <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="pick_up" value="pickUp" name="delivery_type" class="custom-control-input" onclick="addDeliveryFee()">
+                                <input type="radio" id="pick_up" value="pickUp" name="transport_ype" class="custom-control-input" onclick="addDeliveryFee()">
                                 <label class="custom-control-label" for="pick_up">Pick Up $0</label>
                             </div>
                             <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="ups" value="UPS" name="delivery_type" class="custom-control-input" onclick="addDeliveryFee()">
+                                <input type="radio" id="ups" value="UPS" name="transport_ype" class="custom-control-input" onclick="addDeliveryFee()">
                                 <label class="custom-control-label" for="ups">UPS $5</label>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-sm btn-danger rounded-0" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-sm btn-success rounded-0" id="checkoutButton" onclick="checkout()">Checkout</button>
+                    <button type="button" class="btn btn-sm btn-success rounded-0" id="checkoutButton" onclick="checkout()">Pay Now</button>
                 </div>
             </div>
         </div>
