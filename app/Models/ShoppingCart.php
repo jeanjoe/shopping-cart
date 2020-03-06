@@ -7,7 +7,7 @@ use App\Config\Database;
 
 class ShoppingCart extends Database {
 
-    public function get(Type $var = null)
+    public function get()
     {
         # code...
     }

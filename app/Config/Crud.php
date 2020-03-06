@@ -18,11 +18,11 @@ class Crud extends Database
      * @param string $query
      * @return array $data
      */
-    public function getData($table, $fields)
+    public function getAll($table, $fields)
     {
         $data = [];
         $query = $this->executePDOQuery(
-            "SELECT product.*, ratings.rating FROM " . $table  ." AS product LEFT JOIN ratings ON ratings.id=product.id"
+            "SELECT product.*, ratings.rating FROM " . $table . " AS product LEFT JOIN ratings ON ratings.id=product.id"
         );
         while ($row = $query->fetch(\PDO::FETCH_ASSOC)) {
             $data[] = $row;
@@ -37,76 +37,39 @@ class Crud extends Database
      *
      * @return object $item - return single item from database
      */
-    public function getSingleItem($query)
+    public function getSingle($query)
     {
         $request = $this->executePDOQuery($query);
         $item = $request->fetch(\PDO::FETCH_ASSOC);
         return $item;
     }
 
-    /**
-     * Create or Update a resource
-     *
-     * @param string $table
-     * @param array $data
-     * @param array $updateData
-     *
-     * @return boolean
-     */
-    public function createOrUpdate($table, $data = [], $updateData = [])
+    public function create($table, $fields, $values)
     {
-        $keys = array_keys($data);
-        $values = $this->setValueFieldsFromArray($data);
-        $updateString = $this->stringifyArrayKeyValueWithComma($updateData);
-
-        $query = "INSERT INTO " . $table . " (" . implode(',', $keys) . ") VALUES (" . $values . ") ON DUPLICATE KEY UPDATE " . $updateString;
+        $query = "INSERT INTO " . $table . " (" . $fields . ") VALUES " . $values. " ; ";
         $statement = $this->connection->prepare($query);
-        $statement->execute($data);
+        $statement->execute();
         return $this->connection->lastInsertId();
     }
 
     /**
-     * SET Table value fields from array keys
+     * Perform custome Query where user enters raw MySQL Query
      *
-     * @param array $data
-     *
-     * @return string without last comma ,
+     * @param $query
+     * @return array $result
      */
-    public function setValueFieldsFromArray($data = [])
-    {
-
-        $string = '';
-        $keys = array_keys($data);
-        foreach ($keys as $key) {
-            $string = $string . ':' . $key . ',';
-        }
-        return substr($string, 0, -1);
-    }
-
-    /**
-     * Stringify Array Key Value with comma
-     *
-     * @param array $data
-     *
-     * @return string without last comma
-     */
-    public function stringifyArrayKeyValueWithComma($array = [])
-    {
-        $stringData = '';
-        foreach ($array as $key => $value) {
-            $stringData = $stringData . '' . $key . '=' . $value . ',';
-        }
-        return substr($stringData, 0, -1);
-    }
-
     public function customQuery($query)
     {
-        $result = $this->executePDOQuery($query);
+        $result = [];
+        $query = $this->executePDOQuery($query);
+        while ($row = $query->fetch(\PDO::FETCH_ASSOC)) {
+            $result[] = $row;
+        }
         return $result;
     }
 
     /**
-     * EXECUTE PDO QUERY
+     * EXECUTE PDO query
      *
      * @param string $query
      *

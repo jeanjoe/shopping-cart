@@ -20,25 +20,24 @@ class Rating extends Crud
      */
     public function store($data = [])
     {
-        $data = array_merge($data, ["ip_address" => $this->getIpAddress()]);
-        $response = $this->createOrUpdate($this->table, $data, ['rating' => $data['rating']]);
+        $response = $this->create($this->table, 'product_id,rating', $this->flattenArray($data));
         return $response;
     }
 
-    public function getAll()
+    public function flattenArray($array = [])
     {
-        $this->getAll();
-    }
-
-    /**
-     * Get Client IP Address
-     *
-     * @return string $ip
-     */
-    public function getIpAddress()
-    {
-        $ip = $_SERVER['REMOTE_ADDR'];
-        return $ip;
+        $outerValue = '';
+        foreach($array as $array1) {
+            $innerValue = '';
+            foreach ($array1 as $value) {
+                $innerValue = $innerValue . ''. $value .',';
+            }
+            $innerValue = '(' . substr($innerValue, 0, -1) .')';
+            $outerValue = $outerValue .''. $innerValue .',';
+            
+        }
+        $outerValue = substr($outerValue, 0, -1);
+        return $outerValue;
     }
 
 }

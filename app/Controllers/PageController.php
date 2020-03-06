@@ -2,23 +2,24 @@
 
 namespace App\Controllers;
 
-use App\Config\Database;
 use App\Models\Product;
 use App\Models\Rating;
 
-class PageControllers extends Database
+class PageControllers
 {
-
     /**
-     * Get All products
+     * GET All products
      */
     public function getProducts()
     {
         $product = new Product();
-        $products = $product->getProducts();
+        $products = $product->getProductsWithRatings();
         return $products;
     }
 
+    /**
+     * GET single Product
+     */
     public function getSingleProduct($id)
     {
         $product = new Product();
@@ -26,21 +27,17 @@ class PageControllers extends Database
         return $products;
     }
 
+    /**
+     * POST product ratings
+     */
     public function storeRating($data)
     {
         $ratings = new Rating();
 
         try
         {
-            $data = [
-                "product_id" => $data['product_id'],
-                "rating" => $data['rating']
-            ];
             $request = $ratings->store($data);
-            return [
-                "rating" => $request,
-                "success" => 1
-            ];
+            return $request;
         }
         catch (\Exception $ex) {
             return [

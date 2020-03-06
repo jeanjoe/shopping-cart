@@ -1,10 +1,12 @@
 $(document).ready(() => {
     $("#my_cart_buttons").hide();
     $("#alert").hide();
+    $("#ratings").hide();
+    $("#finishRatingButton").hide();
     httpRequest("routes.php/products", displayProducts);
     getCartContent();
-    localStorage.removeItem('transport_ype');
-    getCurrentBalance()
+    localStorage.removeItem("transport_ype");
+    getCurrentBalance();
 });
 
 /**
@@ -18,10 +20,12 @@ function httpRequest(url, cFunction, method = "GET", data = null) {
     $("#spinner").html(
         "<i class='fa fa-circle-o-notch fa-spin text-warning'></i>"
     );
-    const xHttp = new XMLHttpRequest();
+    let xHttp = new XMLHttpRequest();
 
     xHttp.open(method, url, true);
-    xHttp.send(data);
+    if (method == "POST")
+        xHttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xHttp.send(JSON.stringify(data));
     xHttp.onreadystatechange = res => {
         $("#spinner").html("");
         if (res.target.readyState == 4 && res.target.status == 200) {
@@ -43,6 +47,7 @@ function displayProducts(products) {
     let productFragment = new DocumentFragment();
 
     products.forEach(product => {
+        const rating = product.rating == null ? 0 : product.rating;
         let productColumn = document.createElement("div");
         productColumn.classList.add("col-md-3");
         productColumn.innerHTML =
@@ -71,8 +76,13 @@ function displayProducts(products) {
             '<i class="fa fa-cart-plus"></i> ' +
             "</button>" +
             '<button class="btn btn-sm float-right btn-link text-warning">' +
-            '<i class="fa fa-star" aria-hidden="true"></i> 0.0' +
+            '<i class="fa fa-star" aria-hidden="true"></i>' +
+            parseFloat(rating).toFixed(1) +
             "</button>" +
+            '<div class="py-2" id="rating_' +
+            product.id +
+            '"> ' +
+            "</div>" +
             "</div>" +
             "</div>";
         productFragment.appendChild(productColumn);
@@ -81,6 +91,9 @@ function displayProducts(products) {
     productsColumn.appendChild(productFragment);
 }
 
+/**
+ * Get Cart Contents
+ */
 function getCartContent() {
     let cartButton = document.getElementById("cartDropdownMenuLink");
     const cartItems = getCartItems();
@@ -88,6 +101,10 @@ function getCartContent() {
     getMyCartProducts();
 }
 
+/**
+ * Add item to cart
+ * @param {*} id 
+ */
 function addToCart(id) {
     const cartItems = getCartItems();
     const quantity = parseInt($(`#quantity_${id}`).val());
@@ -97,25 +114,31 @@ function addToCart(id) {
             `Select a valid Qty, Min Qty=1 and Max-${maxQuantity}, Your quantity ${quantity}`
         );
     } else {
-        const itemExistsIndex = cartItems.findIndex((item) => item.id == id);
+        const itemExistsIndex = cartItems.findIndex(item => item.id == id);
 
-        if (itemExistsIndex == -1 ) cartItems.push({ id, quantity })
-        
+        if (itemExistsIndex == -1) cartItems.push({ id, quantity });
+
         cartItems[itemExistsIndex] = { id, quantity };
-        localStorage.setItem(
-            "cart_items",
-            JSON.stringify(cartItems)
-        );
+        localStorage.setItem("cart_items", JSON.stringify(cartItems));
 
         getCartContent();
-        $("input[name=transport_ype]").prop('checked', false);
-        localStorage.removeItem('transport_ype');
+        $("input[name=transport_ype]").prop("checked", false);
+        localStorage.removeItem("transport_ype");
     }
 }
 
+/**
+ * clear cart items in storage
+ */
 function clearCart() {
     resetAddToCartToButton();
     localStorage.setItem("cart_items", JSON.stringify([]));
+    $("#finishRatingButton").show();
+    $("#checkoutButton").show();
+    if (getCartItems().length < 1) {
+        $("#checkoutButton").hide();
+        $("#finishRatingButton").hide();
+    }
     getCartContent();
 }
 
@@ -131,8 +154,8 @@ function removeCartItem(id) {
     });
     localStorage.setItem("cart_items", JSON.stringify(cartItems));
     getCartContent();
-    $("input[name=transport_ype]").prop('checked', false);
-    localStorage.removeItem('transport_ype');
+    $("input[name=transport_ype]").prop("checked", false);
+    localStorage.removeItem("transport_ype");
 }
 
 /**
@@ -188,7 +211,8 @@ function getMyCartProducts() {
     $("#alert").hide();
     $("#my_cart_modal_content").show();
     $("#my_cart_table tbody").empty();
-    $("#my_cart_buttons").show()
+    $("#my_cart_buttons").show();
+    $("#ratings").empty();
     if (cartItems.length === 0) {
         setAlertContent(
             "Your Cart is Empty",
@@ -196,7 +220,7 @@ function getMyCartProducts() {
             "alert-success alert-warning"
         );
         $("#my_cart_modal_content").hide();
-        $("#my_cart_buttons").hide()
+        $("#my_cart_buttons").hide();
     }
 
     cartItems.forEach(item => {
@@ -236,13 +260,14 @@ function setMyCartContent(data) {
     document.getElementById("my_cart_items").appendChild(myCartColumn);
     const tableRow = setTableRow(data.product, cartItem.quantity, totalCost);
     $("#my_cart_table tbody").append(tableRow);
+    setRatings(data.product);
 }
 
 /**
  * Set Table row content to display checkout items
- * @param {*} data 
- * @param {*} quantity 
- * @param {*} totalCost 
+ * @param {*} data
+ * @param {*} quantity
+ * @param {*} totalCost
  */
 function setTableRow(data, quantity, totalCost) {
     return (
@@ -270,7 +295,7 @@ function setTableRow(data, quantity, totalCost) {
 
 /**
  * Set Total amount
- * @param {*} amount 
+ * @param {*} amount
  */
 function setTotalAmount(amount) {
     let totalAmount = $("#total_amount").val();
@@ -289,9 +314,10 @@ function checkout() {
     } else {
         const deliveryFee = transportType == "pickUp" ? 0 : 5;
 
-        const grandTotal = parseFloat(deliveryFee) + parseFloat($("#total_amount").val());
+        const grandTotal =
+            parseFloat(deliveryFee) + parseFloat($("#total_amount").val());
 
-        if ( grandTotal > getCurrentBalance()) {
+        if (grandTotal > getCurrentBalance()) {
             setAlertContent(
                 `Please buy within your Credit of $${getCurrentBalance()}`,
                 "alert-danger",
@@ -300,23 +326,24 @@ function checkout() {
         } else {
             setCurrentBalance(grandTotal);
             setAlertContent(
-                "<i class='fa fa-thumbs-up'></i> Thank you for your purchase, Your order is being processed",
+                "<i class='fa fa-thumbs-up'></i> " +
+                "Thank you for your purchase, Your order is being processed. Please finish by rating our products",
                 "alert-success",
                 "alert-danger alert-warning"
             );
             $("#my_cart_modal_content").hide();
-            setTimeout(() => {
-                clearCart();
-            }, 5000)
+            $("#checkoutButton").hide();
+            $("#ratings").show();
+            $("#finishRatingButton").show();
         }
     }
 }
 
 /**
  * Set Alert content
- * @param {*} message 
- * @param {*} classesToAdd 
- * @param {*} classesToRemove 
+ * @param {*} message
+ * @param {*} classesToAdd
+ * @param {*} classesToRemove
  */
 function setAlertContent(message, classesToAdd, classesToRemove = null) {
     $("#alert").show();
@@ -332,13 +359,13 @@ function setAlertContent(message, classesToAdd, classesToRemove = null) {
 function addDeliveryFee() {
     $("#alert").hide();
     const transportType = $("input[name=transport_ype]:checked").val();
-    const checkStorage = localStorage.getItem('transport_ype');
-    
-    let deliveryFee = transportType == "UPS" ? 5 : 0;
-    
-    if (transportType == 'pickUp' && checkStorage == 'UPS')  deliveryFee = -5;
+    const checkStorage = localStorage.getItem("transport_ype");
 
-    localStorage.setItem('transport_ype', transportType)
+    let deliveryFee = transportType == "UPS" ? 5 : 0;
+
+    if (transportType == "pickUp" && checkStorage == "UPS") deliveryFee = -5;
+
+    localStorage.setItem("transport_ype", transportType);
     $("#total_amount").val(
         parseFloat(deliveryFee + parseFloat($("#total_amount").val())).toFixed(2)
     );
@@ -348,18 +375,73 @@ function addDeliveryFee() {
  * Get current Balance from storage, else set it to $100
  */
 function getCurrentBalance() {
-    const storageBal = parseFloat(localStorage.getItem('current_balance') || '100');
+    const storageBal = parseFloat(
+        localStorage.getItem("current_balance") || "100"
+    );
     $("#current_balance").html(`Bal. $${storageBal.toFixed(2)}`);
     return storageBal;
 }
 
 /**
  * Set new current value and save to storage
- * @param {*} amount 
+ * @param {*} amount
  */
 function setCurrentBalance(amount) {
     const storageBal = parseFloat(getCurrentBalance() - parseFloat(amount));
-    localStorage.setItem('current_balance', storageBal.toFixed(2));
+    localStorage.setItem("current_balance", storageBal.toFixed(2));
     getCurrentBalance();
     return;
+}
+
+function getRange(id) {
+    $(`#show_rating_${id}`).html($(`#range_${id}`).val());
+}
+
+function setRatings(product) {
+    const ratingsDiv = document.createElement("div");
+    ratingsDiv.classList.add("my-2");
+    ratingsDiv.innerHTML =
+        '<label for="range_' +
+        product.id +
+        '">Rate ' +
+        product.name +
+        ' <span id="show_rating_' +
+        product.id +
+        '">1</span> </label>' +
+        '<input type="range" value="1" name="' +
+        product.id +
+        '" class="custom-range" min="0" max="5" onclick="getRange(' +
+        product.id +
+        ')" id="range_' +
+        product.id +
+        '"></input>';
+    $("#ratings").append(ratingsDiv);
+}
+
+function rateItems() {
+    const productRatings = [];
+    $("#ratings :input").each(function (e) {
+        productRatings.push({
+            product_id: this.name,
+            rating: this.value
+        });
+    });
+    httpRequest(
+        `routes.php/ratings/`,
+        handleSubmitRatings,
+        "POST",
+        productRatings
+    );
+}
+
+function handleSubmitRatings(data) {
+    $("#ratings").hide();
+    setAlertContent(
+        "Thank you for rating",
+        "alert-success",
+        "alert-danger alert-warning"
+    );
+    setTimeout(() => {
+        clearCart();
+    }, 5000);
 }

@@ -15,7 +15,14 @@ class Product extends Crud
      */
     public function getProducts()
     {
-        $products = $this->getData($this->table, '*');
+        $products = $this->getAll($this->table, '*');
+        return $products;
+    }
+
+    public function getProductsWithRatings()
+    {
+        $query = "SELECT product.*, ratings.rating FROM products AS product LEFT JOIN ratings ON ratings.id=product.id";
+        $products = $this->customQuery($query);
         return $products;
     }
 
@@ -28,7 +35,7 @@ class Product extends Crud
     public function getSingleProduct($id)
     {
         $query = "SELECT * FROM products WHERE id=" . $id . " LIMIT 1";
-        $product = $this->getSingleItem($query);
+        $product = $this->getSingle($query);
         return $product;
     }
 }
