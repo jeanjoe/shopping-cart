@@ -312,11 +312,7 @@ function checkout() {
     if (transportType == undefined) {
         setAlertContent("Please pick a transport type", "alert-danger");
     } else {
-        const deliveryFee = transportType == "pickUp" ? 0 : 5;
-
-        const grandTotal =
-            parseFloat(deliveryFee) + parseFloat($("#total_amount").val());
-
+        const grandTotal = parseFloat($("#total_amount").val());
         if (grandTotal > getCurrentBalance()) {
             setAlertContent(
                 `Please buy within your Credit of $${getCurrentBalance()}`,
@@ -419,6 +415,7 @@ function setRatings(product) {
 }
 
 function rateItems() {
+    $("#finishRatingButton").hide()
     const productRatings = [];
     $("#ratings :input").each(function (e) {
         productRatings.push({
@@ -435,12 +432,12 @@ function rateItems() {
 }
 
 function handleSubmitRatings(data) {
-    $("#ratings").hide();
     setAlertContent(
-        "Thank you for rating",
+        "Thank you for rating our products",
         "alert-success",
         "alert-danger alert-warning"
     );
+    $("#ratings").hide();
     setTimeout(() => {
         clearCart();
     }, 5000);
