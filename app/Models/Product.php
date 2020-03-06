@@ -21,7 +21,7 @@ class Product extends Crud
 
     public function getProductsWithRatings()
     {
-        $query = "SELECT product.*, ratings.rating FROM products AS product LEFT JOIN ratings ON ratings.id=product.id";
+        $query = "SELECT product.*, AVG(ratings.rating) AS rating FROM products AS product LEFT JOIN ratings ON ratings.product_id=product.id GROUP BY product.id";
         $products = $this->customQuery($query);
         return $products;
     }
