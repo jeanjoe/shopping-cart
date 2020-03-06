@@ -1,7 +1,7 @@
 $(document).ready(() => {
     $("#my_cart_buttons").hide();
     $("#alert").hide();
-    httpRequest("products.php", displayProducts);
+    httpRequest("routes.php/products", displayProducts);
     getCartContent();
     localStorage.removeItem('transport_ype');
     getCurrentBalance()
@@ -201,7 +201,7 @@ function getMyCartProducts() {
 
     cartItems.forEach(item => {
         $(`#quantity_${item.id}`).val(item.quantity);
-        httpRequest(`products.php?product_id=${item.id}`, setMyCartContent);
+        httpRequest(`routes.php/products/${item.id}`, setMyCartContent);
     });
 }
 
@@ -340,7 +340,7 @@ function addDeliveryFee() {
 
     localStorage.setItem('transport_ype', transportType)
     $("#total_amount").val(
-        parseFloat(deliveryFee) + parseFloat($("#total_amount").val())
+        parseFloat(deliveryFee + parseFloat($("#total_amount").val())).toFixed(2)
     );
 }
 

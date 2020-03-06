@@ -2,9 +2,7 @@
 
 namespace App\Config;
 
-use App\Config\Env;
-
-class Database extends Env
+class Database
 {
     private $host;
     private $user;
@@ -20,8 +18,6 @@ class Database extends Env
      */
     public function __construct()
     {
-        parent::__construct();
-
         $this->database = $_ENV['DB_NAME'];
         $this->host = $_ENV['DB_HOST'];
         $this->user = $_ENV['DB_USER'];
