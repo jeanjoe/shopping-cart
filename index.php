@@ -34,7 +34,7 @@
                             <ul class="list-group" id="my_cart_items"></ul>
                             <div class="p-2" id="my_cart_buttons">
                                 <button class="btn btn-sm btn-outline-danger rounded-0 mr-2 float-left" onClick="clearCart()">Clear</button>
-                                <button class="btn btn-sm btn-outline-success rounded-0 float-right" type="button" data-toggle="modal" data-target="#cartModal">Checkout</button>
+                                <button class="btn btn-sm btn-outline-success rounded-0 float-right" type="button" data-toggle="modal" data-target="#cartModal">Open Cart</button>
                             </div>
                         </div>
                     </div>

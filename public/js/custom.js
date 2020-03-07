@@ -11,10 +11,10 @@ $(document).ready(() => {
 
 /**
  * HANDLE ALL HTTP REQUESTS
- * @param {*} url url to fetch the API data
+ * @param {String} url url to fetch the API data
  * @param {*} cFunction callback function to handle the response data
- * @param {*} method Default set to GET options inclue POST, PUT, DELETE
- * @param {*} data Request Data in case of POST, PUT
+ * @param {String} method Default set to GET options inclue POST, PUT, DELETE
+ * @param {Array} data Request Data in case of POST, PUT
  */
 function httpRequest(url, cFunction, method = "GET", data = null) {
     $("#spinner").html(
@@ -40,14 +40,14 @@ function httpRequest(url, cFunction, method = "GET", data = null) {
 /**
  * Display All products
  *
- * @param {*} products Get products and display on the html products div
+ * @param {Object} products Get products and display on the html products div
  */
 function displayProducts(products) {
     let productsColumn = document.getElementById("products");
     let productFragment = new DocumentFragment();
 
     products.forEach(product => {
-        const rating = product.rating == null ? 0 : product.rating;
+        const rating = product.average_rating == null ? 0 : product.average_rating;
         let productColumn = document.createElement("div");
         productColumn.classList.add("col-md-3");
         productColumn.innerHTML =
@@ -76,9 +76,14 @@ function displayProducts(products) {
             '<i class="fa fa-cart-plus"></i> ' +
             "</button>" +
             '<button class="btn btn-sm float-right btn-link text-warning">' +
-            '<i class="fa fa-star" aria-hidden="true"></i>' +
+            '<input type="hidden" value="' + product.ratings +'" id="product_ratings_' +
+            product.id +
+            '" />' +
+            '<i class="fa fa-star"></i> <span id="product_rating_' +
+            product.id +
+            '">' +
             parseFloat(rating).toFixed(1) +
-            "</button>" +
+            "</span></button>" +
             '<div class="py-2" id="rating_' +
             product.id +
             '"> ' +
@@ -103,11 +108,11 @@ function getCartContent() {
 
 /**
  * Add item to cart
- * @param {*} id 
+ * @param {Int} id
  */
-function addToCart(id) {
+function addToCart(id, newQuantity = null) {
     const cartItems = getCartItems();
-    const quantity = parseInt($(`#quantity_${id}`).val());
+    const quantity = newQuantity ? newQuantity : parseInt($(`#quantity_${id}`).val());
     const maxQuantity = parseInt($(`#quantity_${id}`).attr("max"));
     if (quantity > maxQuantity || quantity < 1) {
         alert(
@@ -116,7 +121,7 @@ function addToCart(id) {
     } else {
         const itemExistsIndex = cartItems.findIndex(item => item.id == id);
 
-        if (itemExistsIndex == -1) cartItems.push({ id, quantity });
+        if (itemExistsIndex == -1) cartItems.unshift({ id, quantity });
 
         cartItems[itemExistsIndex] = { id, quantity };
         localStorage.setItem("cart_items", JSON.stringify(cartItems));
@@ -125,6 +130,7 @@ function addToCart(id) {
         $("input[name=transport_ype]").prop("checked", false);
         localStorage.removeItem("transport_ype");
     }
+    $("#checkoutButton").show();
 }
 
 /**
@@ -144,7 +150,7 @@ function clearCart() {
 
 /**
  * Remove particular item from cart
- * @param {*} id
+ * @param {Int} id
  */
 function removeCartItem(id) {
     let cartItems = getCartItems();
@@ -161,6 +167,8 @@ function removeCartItem(id) {
 /**
  * Check if item exists in cart
  * @param {*} id
+ * 
+ * @return {Boolean}
  */
 function checkItemInCart(id) {
     const cartItems = getCartItems();
@@ -196,6 +204,11 @@ function getCartItems() {
     return cartItems;
 }
 
+/**
+ * Get Cart Items
+ * @param {Int} id 
+ * @return {Object} cartItem
+ */
 function getCartItem(id) {
     const cartItems = getCartItems();
     return cartItems.find(item => item.id == id);
@@ -232,7 +245,7 @@ function getMyCartProducts() {
 /**
  * This is a callback function to handle data from http Request
  * Get the http response and display on dropdown and modal
- * @param {*} data
+ * @param {Object} data
  */
 function setMyCartContent(data) {
     const myCartColumn = document.createElement("li");
@@ -265,9 +278,9 @@ function setMyCartContent(data) {
 
 /**
  * Set Table row content to display checkout items
- * @param {*} data
- * @param {*} quantity
- * @param {*} totalCost
+ * @param {Object} data
+ * @param {Int} quantity
+ * @param {Float} totalCost
  */
 function setTableRow(data, quantity, totalCost) {
     return (
@@ -276,14 +289,24 @@ function setTableRow(data, quantity, totalCost) {
         data.name +
         "</td>" +
         "<td>" +
+        '<input type="number" min="1" max="' +
+        data.quantity_available +
+        '" class="form-control form-control-sm rounded-0" id="change_quantity_' +
+        data.id +
+        '" value="' +
         quantity +
+        '" onchange="updateQuantity(' +
+        data.id +
+        ", " +
+        data.price +
+        ')" />' +
         "</td>" +
         "<td> $" +
         data.price +
         "</td>" +
-        "<td> $" +
+        '<td> $ <span id="total_cost_' + data.id +'">' +
         parseFloat(totalCost).toFixed(2) +
-        "</td>" +
+        "</span></td>" +
         "<td class='text-center'>" +
         '<i class="fa fa-trash text-danger delete-icon" onclick="removeCartItem(' +
         data.id +
@@ -295,7 +318,7 @@ function setTableRow(data, quantity, totalCost) {
 
 /**
  * Set Total amount
- * @param {*} amount
+ * @param {Float} amount
  */
 function setTotalAmount(amount) {
     let totalAmount = $("#total_amount").val();
@@ -337,9 +360,9 @@ function checkout() {
 
 /**
  * Set Alert content
- * @param {*} message
- * @param {*} classesToAdd
- * @param {*} classesToRemove
+ * @param {String} message
+ * @param {String} classesToAdd
+ * @param {String} classesToRemove
  */
 function setAlertContent(message, classesToAdd, classesToRemove = null) {
     $("#alert").show();
@@ -369,6 +392,8 @@ function addDeliveryFee() {
 
 /**
  * Get current Balance from storage, else set it to $100
+ * 
+ * @return {Float} storageBal
  */
 function getCurrentBalance() {
     const storageBal = parseFloat(
@@ -380,7 +405,7 @@ function getCurrentBalance() {
 
 /**
  * Set new current value and save to storage
- * @param {*} amount
+ * @param {Float} amount
  */
 function setCurrentBalance(amount) {
     const storageBal = parseFloat(getCurrentBalance() - parseFloat(amount));
@@ -389,10 +414,18 @@ function setCurrentBalance(amount) {
     return;
 }
 
+/**
+ * Show range values
+ * @param {Int} id 
+ */
 function getRange(id) {
     $(`#show_rating_${id}`).html($(`#range_${id}`).val());
 }
 
+/**
+ * Set Ratings for product
+ * @param {Object} product 
+ */
 function setRatings(product) {
     const ratingsDiv = document.createElement("div");
     ratingsDiv.classList.add("my-2");
@@ -414,14 +447,18 @@ function setRatings(product) {
     $("#ratings").append(ratingsDiv);
 }
 
+/**
+ * Rate items
+ */
 function rateItems() {
-    $("#finishRatingButton").hide()
+    $("#finishRatingButton").hide();
     const productRatings = [];
     $("#ratings :input").each(function (e) {
         productRatings.push({
             product_id: this.name,
             rating: this.value
         });
+        setNewAverageRatings(this.name, this.value)
     });
     httpRequest(
         `routes.php/ratings/`,
@@ -431,6 +468,10 @@ function rateItems() {
     );
 }
 
+/**
+ * Handle Ratings HTTP response
+ * @param {*} data 
+ */
 function handleSubmitRatings(data) {
     setAlertContent(
         "Thank you for rating our products",
@@ -441,4 +482,32 @@ function handleSubmitRatings(data) {
     setTimeout(() => {
         clearCart();
     }, 5000);
+}
+
+/**
+ * 
+ * @param {id} id product Quantity
+ * @param {float} unitCost 
+ */
+function updateQuantity(id, unitCost) {
+    const newQuantity = $(`#change_quantity_${id}`).val();
+    const newTotalCost = parseFloat(unitCost * newQuantity);
+    $(`#total_cost_${id}`).html(newTotalCost.toFixed(2));
+    addToCart(id, newQuantity);
+}
+
+/**
+ * Set New Average rating
+ * @param {Int} id Product Id
+ * @param {String} rating Rating value for the product
+ */
+function setNewAverageRatings(id, rating) {
+    let oldRatings = $(`#product_ratings_${id}`).val();
+    oldRatings = oldRatings.split(",").map((rating) => { return parseInt(rating)});
+    const sum = oldRatings.reduce((a, b) => {
+        return a + b;
+    }, 0);
+    rating = parseInt(rating);
+    const newAverage = parseFloat((sum + rating )/(oldRatings.length + 1));
+    $(`#product_rating_${id}`).html(newAverage.toFixed(1));
 }
