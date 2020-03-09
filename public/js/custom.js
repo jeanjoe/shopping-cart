@@ -497,18 +497,18 @@ function setRatings() {
         ratingsDiv.classList.add("my-2");
         ratingsDiv.innerHTML =
             '<label for="range_' +
-            groupedCartItems[key][0].prodct_id +
+            groupedCartItems[key][0].product_id +
             '">Rate ' +
             groupedCartItems[key][0].name +
             ' <span id="show_rating_' +
-            groupedCartItems[key][0].id +
+            groupedCartItems[key][0].product_id +
             '">1</span> </label>' +
             '<input type="range" value="1" name="' +
-            groupedCartItems[key][0].id +
+            groupedCartItems[key][0].product_id +
             '" class="custom-range" min="0" max="5" onclick="getRange(' +
-            groupedCartItems[key][0].id +
+            groupedCartItems[key][0].product_id +
             ')" id="range_' +
-            groupedCartItems[key][0].id +
+            groupedCartItems[key][0].product_id +
             '"></input>';
         $("#ratings").append(ratingsDiv);
     });
@@ -525,6 +525,7 @@ function rateItems() {
             product_id: this.name,
             rating: this.value
         });
+        console.log('product function call', this.name, this.value);
         setNewAverageRatings(this.name, this.value);
     });
     httpRequest(
@@ -570,8 +571,11 @@ function updateQuantity(productId, unitCost, cartId) {
  */
 function setNewAverageRatings(productId, rating) {
     let oldRatings = $(`#product_ratings_${productId}`).val();
-    let newAverage = parseFloat(rating);
-    if (oldRatings !== "null") {
+    let newAverage = parseFloat(0);
+    if (oldRatings === "null") {
+        newAverage = parseFloat(rating);
+        $(`#product_ratings_${productId}`).val(rating);
+    } else {
         oldRatings = oldRatings.split(",").map(rating => {
             return parseInt(rating);
         });
