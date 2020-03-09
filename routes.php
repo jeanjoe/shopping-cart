@@ -55,3 +55,5 @@ if (isset($uri[2]))
 }
 
 echo json_encode($response);
+
+exit();
