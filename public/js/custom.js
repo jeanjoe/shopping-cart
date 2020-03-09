@@ -5,7 +5,7 @@ $(document).ready(() => {
     $("#finishRatingButton").hide();
     httpRequest("routes.php/products", displayProducts);
     getCartContent();
-    localStorage.removeItem("transport_ype");
+    removeDeliveryFee();
     getCurrentBalance();
 });
 
@@ -21,7 +21,6 @@ function httpRequest(url, cFunction, method = "GET", data = null) {
         "<i class='fa fa-circle-o-notch fa-spin text-warning'></i>"
     );
     let xHttp = new XMLHttpRequest();
-
     xHttp.open(method, url, true);
     if (method == "POST")
         xHttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
@@ -38,9 +37,10 @@ function httpRequest(url, cFunction, method = "GET", data = null) {
 }
 
 /**
- * Display All products
+ * Dispaly all product
  *
  * @param {Object} products Get products and display on the html products div
+ *
  */
 function displayProducts(products) {
     let productsColumn = document.getElementById("products");
@@ -50,50 +50,71 @@ function displayProducts(products) {
         const rating = product.average_rating == null ? 0 : product.average_rating;
         let productColumn = document.createElement("div");
         productColumn.classList.add("col-md-3");
-        productColumn.innerHTML =
-            '<div class="card">' +
-            '<img src="' +
-            product.image +
-            '" class="card-img-top" alt="' +
-            product.name +
-            '">' +
-            '<div class="card-body">' +
-            '<h5 class="card-title text-sm text-primary">' +
-            product.name +
-            " $" +
-            product.price +
-            "</h5>" +
-            '<input type="number" id="quantity_' +
-            product.id +
-            '" class="form-control rounded-0 form-control-sm mr-1 w-12" value="1" min="1" max=' +
-            product.quantity_available +
-            " />" +
-            '<button type="submit" id="add_to_cart_button_' +
-            product.id +
-            '" onclick="addToCart(' +
-            product.id +
-            ')" class="btn btn-sm rounded-0 btn-primary">' +
-            '<i class="fa fa-cart-plus"></i> ' +
-            "</button>" +
-            '<button class="btn btn-sm float-right btn-link text-warning">' +
-            '<input type="hidden" value="' + product.ratings +'" id="product_ratings_' +
-            product.id +
-            '" />' +
-            '<i class="fa fa-star"></i> <span id="product_rating_' +
-            product.id +
-            '">' +
-            parseFloat(rating).toFixed(1) +
-            "</span></button>" +
-            '<div class="py-2" id="rating_' +
-            product.id +
-            '"> ' +
-            "</div>" +
-            "</div>" +
-            "</div>";
+        product.average_rating = rating;
+        productColumn.innerHTML = productHTMLContent(product);
         productFragment.appendChild(productColumn);
     });
-
     productsColumn.appendChild(productFragment);
+}
+
+/**
+ * Set Product HTML content
+ *
+ * @param {Object} product Product Object
+ *
+ * @return {String} Html content
+ */
+function productHTMLContent(product) {
+    return (
+        '<div class="card">' +
+        '<img src="' +
+        product.image +
+        '" class="card-img-top" alt="' +
+        product.name +
+        '" id="product_image_' +
+        product.id +
+        '" />' +
+        '<div class="card-body">' +
+        '<h5 class="card-title text-sm text-primary">' +
+        '<span id="product_name_' +
+        +product.id +
+        '">' +
+        product.name +
+        '</span> $ <span id="product_price_' +
+        product.id +
+        '">' +
+        product.price +
+        "</span></h5>" +
+        '<input type="number" id="quantity_' +
+        product.id +
+        '" class="form-control rounded-0 form-control-sm mr-1 w-12" value="1" min="1" max=' +
+        product.quantity_available +
+        " />" +
+        '<button type="submit" id="add_to_cart_button_' +
+        product.id +
+        '" onclick="addToCart(' +
+        product.id +
+        ')" class="btn btn-sm rounded-0 btn-primary">' +
+        '<i class="fa fa-cart-plus"></i> ' +
+        "</button>" +
+        '<button class="btn btn-sm float-right btn-link text-warning">' +
+        '<input type="hidden" value="' +
+        product.ratings +
+        '" id="product_ratings_' +
+        product.id +
+        '" />' +
+        '<i class="fa fa-star"></i> <span id="product_rating_' +
+        product.id +
+        '">' +
+        parseFloat(product.average_rating).toFixed(1) +
+        "</span></button>" +
+        '<div class="py-2" id="rating_' +
+        product.id +
+        '"> ' +
+        "</div>" +
+        "</div>" +
+        "</div>"
+    );
 }
 
 /**
@@ -107,28 +128,45 @@ function getCartContent() {
 }
 
 /**
- * Add item to cart
- * @param {Int} id
+ * Add product to cart
+ *
+ * @param {*} productId
  */
-function addToCart(id, newQuantity = null) {
-    const cartItems = getCartItems();
-    const quantity = newQuantity ? newQuantity : parseInt($(`#quantity_${id}`).val());
-    const maxQuantity = parseInt($(`#quantity_${id}`).attr("max"));
-    if (quantity > maxQuantity || quantity < 1) {
+function addToCart(productId, newQuantity = null, cartId = null) {
+    const productQuantity = newQuantity
+        ? newQuantity
+        : parseInt($(`#quantity_${productId}`).val());
+    const productName = $(`#product_name_${productId}`).html();
+    const productImage = $(`#product_image_${productId}`).attr("src");
+    const productPrice = $(`#product_price_${productId}`).html();
+    const productRating = $(`#product_rating_${productId}`).html();
+
+    const maxQuantity = parseInt($(`#quantity_${productId}`).attr("max"));
+    if (productQuantity > maxQuantity || productQuantity < 1) {
         alert(
-            `Select a valid Qty, Min Qty=1 and Max-${maxQuantity}, Your quantity ${quantity}`
+            `Enter a Valid Qty, Min Qty: 1 - Max: ${maxQuantity}, Your Quantity: ${productQuantity}`
         );
     } else {
-        const itemExistsIndex = cartItems.findIndex(item => item.id == id);
+        let cartItems = getCartItems();
 
-        if (itemExistsIndex == -1) cartItems.unshift({ id, quantity });
-
-        cartItems[itemExistsIndex] = { id, quantity };
+        if (cartId) {
+            const itemExistsIndex = cartItems.findIndex(item => item.id == cartId);
+            cartItems[itemExistsIndex].quantity = productQuantity;
+        } else {
+            cartItems.push({
+                id: cartItems.length + 1,
+                product_id: productId,
+                quantity: productQuantity,
+                name: productName,
+                image: productImage,
+                rating: productRating,
+                price: productPrice,
+                quantity_available: maxQuantity
+            });
+        }
         localStorage.setItem("cart_items", JSON.stringify(cartItems));
-
         getCartContent();
-        $("input[name=transport_ype]").prop("checked", false);
-        localStorage.removeItem("transport_ype");
+        removeDeliveryFee();
     }
     $("#checkoutButton").show();
 }
@@ -150,29 +188,30 @@ function clearCart() {
 
 /**
  * Remove particular item from cart
- * @param {Int} id
+ *
+ * @param {*} cartId cart Item ID
  */
-function removeCartItem(id) {
+function removeCartItem(cartId) {
     let cartItems = getCartItems();
     cartItems = cartItems.filter(item => {
         $(`#quantity_${item.id}`).val(1);
-        return item.id != id;
+        return item.id != cartId;
     });
     localStorage.setItem("cart_items", JSON.stringify(cartItems));
     getCartContent();
-    $("input[name=transport_ype]").prop("checked", false);
-    localStorage.removeItem("transport_ype");
+    removeDeliveryFee();
 }
 
 /**
  * Check if item exists in cart
- * @param {*} id
- * 
+ *
+ * @param {*} productId
+ *
  * @return {Boolean}
  */
-function checkItemInCart(id) {
+function checkItemInCart(productId) {
     const cartItems = getCartItems();
-    const exists = cartItems.findIndex(item => item.id == id);
+    const exists = cartItems.findIndex(item => item.product_id == productId);
     if (exists != -1) {
         return true;
     }
@@ -185,33 +224,51 @@ function checkItemInCart(id) {
 function resetAddToCartToButton() {
     const cartItems = getCartItems();
     cartItems.forEach(item => {
-        $(`#quantity_${item.id}`).val(1);
-        const button = $(`#add_to_cart_button_${item.id}`);
+        $(`#quantity_${item.product_id}`).val(1);
+        const button = $(`#add_to_cart_button_${item.product_id}`);
         button.html('<i class="fa fa-cart-plus"></i> ');
         button.removeClass("btn-warning");
         button.addClass("btn-primary");
-        button.attr("onclick", `addToCart(${item.id})`);
+        button.attr("onclick", `addToCart(${item.product_id})`);
     });
 }
 
 /**
- * Get Current Cart Items
+ * Get Current Cart Items in sorted array
  *
- * @return array
+ * @return {Array} sortedCartItems
  */
 function getCartItems() {
-    const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-    return cartItems;
+    let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+    let sortedCartItems = [];
+    let groupedCartItems = arrayCartItems(cartItems);
+    Object.keys(groupedCartItems).forEach(key => {
+        Array.prototype.push.apply(sortedCartItems, groupedCartItems[key]);
+    });
+
+    return sortedCartItems;
+}
+
+/**
+ * Reduce cart Items data to objects
+ * @param {Array} arrayData
+ */
+function arrayCartItems(cartItems) {
+    return cartItems.reduce((items, item) => {
+        const value = item["name"];
+        items[value] = (items[value] || []).concat(item);
+        return items;
+    }, {});
 }
 
 /**
  * Get Cart Items
- * @param {Int} id 
+ * @param {*} cartID cartID
  * @return {Object} cartItem
  */
-function getCartItem(id) {
+function getCartItem(cartID) {
     const cartItems = getCartItems();
-    return cartItems.find(item => item.id == id);
+    return cartItems.find(item => item.id == cartID);
 }
 
 /**
@@ -237,23 +294,21 @@ function getMyCartProducts() {
     }
 
     cartItems.forEach(item => {
-        $(`#quantity_${item.id}`).val(item.quantity);
-        httpRequest(`routes.php/products/${item.id}`, setMyCartContent);
+        setMyCartContent(item);
     });
+    setRatings();
 }
 
 /**
  * This is a callback function to handle data from http Request
  * Get the http response and display on dropdown and modal
- * @param {Object} data
+ * @param {Object} product
  */
-function setMyCartContent(data) {
+function setMyCartContent(product) {
     const myCartColumn = document.createElement("li");
-    const cartItem = getCartItem(data.product.id);
-    const totalCost = parseFloat(
-        cartItem.quantity * parseFloat(data.product.price)
-    );
+    const totalCost = parseFloat(product.quantity * parseFloat(product.price));
     setTotalAmount(totalCost);
+    myCartColumn.classList.add("text-sm");
     myCartColumn.classList.add(
         "list-group-item",
         "d-flex",
@@ -263,17 +318,16 @@ function setMyCartContent(data) {
         "py-2"
     );
     myCartColumn.innerHTML =
-        data.product.name +
+        product.name +
         " [" +
-        cartItem.quantity +
+        product.quantity +
         "]" +
         '<button class="btn btn-link text-danger text-right" onclick="removeCartItem(' +
-        data.product.id +
+        product.id +
         ')"><i class="fa fa-trash"></i></button>';
     document.getElementById("my_cart_items").appendChild(myCartColumn);
-    const tableRow = setTableRow(data.product, cartItem.quantity, totalCost);
+    const tableRow = setTableRow(product, product.quantity, totalCost);
     $("#my_cart_table tbody").append(tableRow);
-    setRatings(data.product);
 }
 
 /**
@@ -284,7 +338,10 @@ function setMyCartContent(data) {
  */
 function setTableRow(data, quantity, totalCost) {
     return (
-        "<tr>" +
+        '<tr class="text-sm">' +
+        '<td><img src="' +
+        data.image +
+        '" alt="product image" class="" height="20" width="20" /></td>' +
         "<td>" +
         data.name +
         "</td>" +
@@ -296,18 +353,22 @@ function setTableRow(data, quantity, totalCost) {
         '" value="' +
         quantity +
         '" onchange="updateQuantity(' +
-        data.id +
+        data.product_id +
         ", " +
         data.price +
+        ", " +
+        data.id +
         ')" />' +
         "</td>" +
         "<td> $" +
         data.price +
         "</td>" +
-        '<td> $ <span id="total_cost_' + data.id +'">' +
+        '<td> $ <span id="total_cost_' +
+        data.product_id +
+        '">' +
         parseFloat(totalCost).toFixed(2) +
         "</span></td>" +
-        "<td class='text-center'>" +
+        '<td class="text-center">' +
         '<i class="fa fa-trash text-danger delete-icon" onclick="removeCartItem(' +
         data.id +
         ')"></i>' +
@@ -392,7 +453,7 @@ function addDeliveryFee() {
 
 /**
  * Get current Balance from storage, else set it to $100
- * 
+ *
  * @return {Float} storageBal
  */
 function getCurrentBalance() {
@@ -416,35 +477,41 @@ function setCurrentBalance(amount) {
 
 /**
  * Show range values
- * @param {Int} id 
+ *
+ * @param {*} productId
  */
-function getRange(id) {
-    $(`#show_rating_${id}`).html($(`#range_${id}`).val());
+function getRange(productId) {
+    $(`#show_rating_${productId}`).html($(`#range_${productId}`).val());
 }
 
 /**
- * Set Ratings for product
- * @param {Object} product 
+ * Set Ratings for Unique set of products
+ *
  */
-function setRatings(product) {
-    const ratingsDiv = document.createElement("div");
-    ratingsDiv.classList.add("my-2");
-    ratingsDiv.innerHTML =
-        '<label for="range_' +
-        product.id +
-        '">Rate ' +
-        product.name +
-        ' <span id="show_rating_' +
-        product.id +
-        '">1</span> </label>' +
-        '<input type="range" value="1" name="' +
-        product.id +
-        '" class="custom-range" min="0" max="5" onclick="getRange(' +
-        product.id +
-        ')" id="range_' +
-        product.id +
-        '"></input>';
-    $("#ratings").append(ratingsDiv);
+function setRatings() {
+    const cartItems = getCartItems();
+    const groupedCartItems = arrayCartItems(cartItems);
+    $("#ratings").empty();
+    Object.keys(groupedCartItems).map(key => {
+        const ratingsDiv = document.createElement("div");
+        ratingsDiv.classList.add("my-2");
+        ratingsDiv.innerHTML =
+            '<label for="range_' +
+            groupedCartItems[key][0].prodct_id +
+            '">Rate ' +
+            groupedCartItems[key][0].name +
+            ' <span id="show_rating_' +
+            groupedCartItems[key][0].id +
+            '">1</span> </label>' +
+            '<input type="range" value="1" name="' +
+            groupedCartItems[key][0].id +
+            '" class="custom-range" min="0" max="5" onclick="getRange(' +
+            groupedCartItems[key][0].id +
+            ')" id="range_' +
+            groupedCartItems[key][0].id +
+            '"></input>';
+        $("#ratings").append(ratingsDiv);
+    });
 }
 
 /**
@@ -458,7 +525,7 @@ function rateItems() {
             product_id: this.name,
             rating: this.value
         });
-        setNewAverageRatings(this.name, this.value)
+        setNewAverageRatings(this.name, this.value);
     });
     httpRequest(
         `routes.php/ratings/`,
@@ -470,7 +537,7 @@ function rateItems() {
 
 /**
  * Handle Ratings HTTP response
- * @param {*} data 
+ * @param {*} data
  */
 function handleSubmitRatings(data) {
     setAlertContent(
@@ -485,29 +552,42 @@ function handleSubmitRatings(data) {
 }
 
 /**
- * 
- * @param {id} id product Quantity
- * @param {float} unitCost 
+ * UPDATE my cart quantity and set new Total Cost
+ * @param {*} productId product id
+ * @param {float} unitCost
  */
-function updateQuantity(id, unitCost) {
-    const newQuantity = $(`#change_quantity_${id}`).val();
+function updateQuantity(productId, unitCost, cartId) {
+    const newQuantity = $(`#change_quantity_${cartId}`).val();
     const newTotalCost = parseFloat(unitCost * newQuantity);
-    $(`#total_cost_${id}`).html(newTotalCost.toFixed(2));
-    addToCart(id, newQuantity);
+    $(`#total_cost_${productId}`).html(newTotalCost.toFixed(2));
+    addToCart(productId, newQuantity, cartId);
 }
 
 /**
  * Set New Average rating
- * @param {Int} id Product Id
+ * @param {*} productId Product Id
  * @param {String} rating Rating value for the product
  */
-function setNewAverageRatings(id, rating) {
-    let oldRatings = $(`#product_ratings_${id}`).val();
-    oldRatings = oldRatings.split(",").map((rating) => { return parseInt(rating)});
-    const sum = oldRatings.reduce((a, b) => {
-        return a + b;
-    }, 0);
-    rating = parseInt(rating);
-    const newAverage = parseFloat((sum + rating )/(oldRatings.length + 1));
-    $(`#product_rating_${id}`).html(newAverage.toFixed(1));
+function setNewAverageRatings(productId, rating) {
+    let oldRatings = $(`#product_ratings_${productId}`).val();
+    let newAverage = parseFloat(rating);
+    if (oldRatings !== "null") {
+        oldRatings = oldRatings.split(",").map(rating => {
+            return parseInt(rating);
+        });
+        const sum = oldRatings.reduce((a, b) => {
+            return a + b;
+        }, 0);
+        rating = parseInt(rating);
+        newAverage = parseFloat((sum + rating) / (oldRatings.length + 1));
+    }
+    $(`#product_rating_${productId}`).html(newAverage.toFixed(1));
+}
+
+/**
+ * Remove Delivery Fee and reset the radio buttons
+ */
+function removeDeliveryFee() {
+    $("input[name=transport_ype]").prop("checked", false);
+    localStorage.removeItem("transport_ype");
 }

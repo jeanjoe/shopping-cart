@@ -57,7 +57,7 @@
 
     <!-- Modal -->
     <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
             <div class="modal-content rounded-0">
                 <div class="modal-header bg-modal rounded-0 text-white">
                     <h5 class="modal-title" id="cartModalLabel"><i class="fa fa-shopping-basket"></i> My Cart - Checkout</h5>
@@ -69,7 +69,8 @@
                     <div class="alert rounded-0" id="alert"></div>
                     <div id="my_cart_modal_content">
                         <table class="table table-striped table-sm table-bordered" id="my_cart_table">
-                            <thead class="thead-light">
+                            <thead class="thead-light text-sm">
+                                <th>Image</th>
                                 <th>Name</th>
                                 <th>Qty</th>
                                 <th>Unit Cost</th>
